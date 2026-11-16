@@ -1,0 +1,19 @@
+type,id,category_id,sort,title_en,title_mr,description_en,description_mr,file,caption_en,caption_mr,wide
+category,gal-cat-001,,1,Setting the Stage for Perfection,,"From elegant lighting and royal gold accents to spacious, well-organized arrangements, see how we transform venues into breathtaking dining spaces capable of hosting large-scale gatherings (700+ PAX).",,,,,
+photo,gal-ph-gal-cat-001-01,gal-cat-001,1,,,,,,Wide-angle shot of illuminated buffet counters and decorated seating layouts under a grand marquee.,,1
+photo,gal-ph-gal-cat-001-02,gal-cat-001,2,,,,,,Close-up of premium round tables with gold chairs and decorative centerpieces.,,0
+category,gal-cat-002,,2,"Fresh, Fast, and Flavourful Live Stations",,Watch our master chefs in action! Our interactive live counters bring the vibrant street food culture and sizzling culinary experiences right to your guests' plates.,,,,,
+photo,gal-ph-gal-cat-002-01,gal-cat-002,1,,,,,,"Live Masala Dosa counter sizzling with fresh dosas, chutneys, and sambar.",,0
+photo,gal-ph-gal-cat-002-02,gal-cat-002,2,,,,,,Chatpata Bhel and Pani Puri assembly station.,,0
+photo,gal-ph-gal-cat-002-03,gal-cat-002,3,,,,,,Steaming hot Veg Manchow Soup counter with crispy noodle toppings.,,0
+category,gal-cat-003,,3,Irresistible Beginnings,,"Delight your guests from the very first bite with our smoky, perfectly spiced, and artfully plated appetizers.",,,,,
+photo,gal-ph-gal-cat-003-01,gal-cat-003,1,,,,,,Charcoal-kissed Paneer Angara served in a dark ceramic bowl with fresh herbs and lemon.,,0
+photo,gal-ph-gal-cat-003-02,gal-cat-003,2,,,,,,"Roasted Mushroom Tikka garnished with grilled onions, capsicum, and fresh coriander.",,0
+photo,gal-ph-gal-cat-003-03,gal-cat-003,3,,,,,,Refreshing welcome drinks including colorful Fruit Punch Juice and classic Virgin Mojitos.,,0
+category,gal-cat-004,,4,A Symphony of Authentic Flavors,,"A rich spread featuring traditional Maharashtrian favorites, aromatic rice, decadent gravies, and fresh breads crafted to perfection.",,,,,
+photo,gal-ph-gal-cat-004-01,gal-cat-004,1,,,,,,Rich and creamy Kaju Curry glistening with spices and cream.,,0
+photo,gal-ph-gal-cat-004-02,gal-cat-004,2,,,,,,Side-by-side bowl of aromatic Dal Tadka paired with fragrant Jeera Rice.,,0
+photo,gal-ph-gal-cat-004-03,gal-cat-004,3,,,,,,Freshly puffed Khasta Puris and Phulkas served alongside colorful garden salads.,,0
+category,gal-cat-005,,5,Sweet Endings & Pure Refreshment,,Conclude your celebrations on a high note with our signature traditional sweets and premium beverage counters.,,,,,
+photo,gal-ph-gal-cat-005-01,gal-cat-005,1,,,,,,Exquisite bowls of Coconut Tender Rabdi and rich Anjir Halwa.,,0
+photo,gal-ph-gal-cat-005-02,gal-cat-005,2,,,,,,Neatly arranged Bisleri water bottles and hydration stations.,,0

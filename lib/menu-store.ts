@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 
+import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import { localized, type LocalizedText } from "@/lib/menu-text"
 
 export { localized }
 export type { LocalizedText }
 
-const filePath = path.join(process.cwd(), "data", "menu.csv")
+const filePath = dataCsvPath("menu.csv")
 
 const header = [
   "type",
@@ -220,8 +221,17 @@ async function writeMenu(menu: MenuData) {
     ])
   }
 
-  await mkdir(path.dirname(filePath), { recursive: true })
-  await writeFile(filePath, serializeCsv(rows), "utf8")
+  try {
+    await mkdir(path.dirname(filePath), { recursive: true })
+    await writeFile(filePath, serializeCsv(rows), "utf8")
+  } catch (error) {
+    if (isNotWritable(error)) {
+      throw new MenuError(
+        "Could not write menu.csv. On serverless hosts, save menu changes locally and redeploy with public/data/menu.csv."
+      )
+    }
+    throw error
+  }
 }
 
 function textFields(row: string[], start: number): LocalizedText {
@@ -265,4 +275,10 @@ function bySort<T extends { sort: number }>(left: T, right: T) {
 
 function isMissingFile(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+}
+
+function isNotWritable(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false
+  const code = error.code
+  return code === "EACCES" || code === "EROFS" || code === "EPERM" || code === "ENOTSUP"
 }

@@ -58,7 +58,7 @@ export function TestimonialsEditor({ testimonials }: { testimonials: Testimonial
       <div className="flex flex-col gap-2">
         <h2 className="font-heading text-primary-foreground text-2xl font-normal">Testimonials</h2>
         <p className="text-muted-foreground text-sm">
-          Changes are saved to data/testimonials.csv and appear on the home page immediately. English and Marathi
+          Changes are saved to public/data/testimonials.csv and appear on the home page immediately. English and Marathi
           fields are required for the public site.
         </p>
       </div>

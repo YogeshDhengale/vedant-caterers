@@ -62,7 +62,7 @@ categories.forEach((category, categoryIndex) => {
 })
 
 const csv = `${rows.map((row) => row.map(escape).join(",")).join("\n")}\n`
-const target = path.join(root, "data", "gallery.csv")
+const target = path.join(root, "public", "data", "gallery.csv")
 await mkdir(path.dirname(target), { recursive: true })
 await writeFile(target, csv, "utf8")
 console.log("Wrote", target, "rows", rows.length)

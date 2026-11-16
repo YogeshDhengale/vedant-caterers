@@ -32,7 +32,7 @@ Items marked **(assumed)** follow the reference project conventions and should b
 - Each content type has an `interface` (for example `Service`, `MenuCategory`, `Testimonial`, `GalleryItem`, `SiteSettings`).
 - Pages and sections receive content as props or read it from `content/`; they never embed copy directly.
 - A headless CMS is not part of the first version. If adopted later, only the `content/` layer should need to change.
-- Menu categories and dishes are not in a database. They live in `data/menu.csv`, which Excel can open. `/admin` edits that file through `/api/menu/categories` and `/api/menu/items`. The public menu page reads the file on each request. Writes require the `ADMIN_PASSWORD` session.
+- Menu categories and dishes are not in a database. They live in `public/data/menu.csv` (with testimonials and gallery metadata alongside). Excel can open these files. `/admin` edits them through the menu, testimonials, and gallery APIs. The public site reads them on each request. Writes require the `ADMIN_PASSWORD` session and a writable filesystem (not typical on serverless without redeploy).
 - Placeholder content must be clearly flagged so it cannot reach production unnoticed.
 
 ## Enquiry Model
@@ -40,7 +40,7 @@ Items marked **(assumed)** follow the reference project conventions and should b
 - The enquiry form collects: name, phone, email, event type, event date, approximate guest count, event location, and a message.
 - Input is validated on the client for UX and re-validated on the server before any processing.
 - The server handler is thin: validate, apply basic spam protection (for example a honeypot field and rate limiting), deliver, return a consistent response shape.
-- The cart also builds a program PDF in `lib/program-pdf.ts`. It fills page 2 of `public/filler-pages.pdf` and inserts copies of `public/menu-page.pdf`, twelve selected dishes per page.
+- The cart also builds a program PDF in `lib/program-pdf.ts`. It fills page 2 of `public/filler-pages.pdf` and inserts copies of `public/menu-page.pdf`, twelve selected dishes per page. For Marathi and Hindi carts, dish names use the localized menu fields with English fallback; Devanagari text uses an embedded font in `public/fonts/`.
 - Delivery is a WhatsApp click-to-chat link built by `lib/whatsapp.ts` for `919922187575`. The contact form and the cart enquiry open `https://api.whatsapp.com/send/` with the visitor's details in the message. Nothing is stored on the server.
 - The menu selection (packages and dishes, with quantities) is kept in the browser under `vedant-menu-selection` so the cart survives a refresh. Submitted enquiry text is not stored.
 - Direct WhatsApp actions are plain links. There is no enquiry API route.

@@ -137,10 +137,11 @@ export function CartPage({ content, locale }: { content: CartCopy; locale: Local
           phone: data.phone,
           venue: data.venue,
           date: data.eventDate,
+          locale,
           items: cart.lines.map((line) => ({
             key: line.key,
             kind: line.kind,
-            name: localized(line.name, "en"),
+            name: localized(line.name, locale),
             section: line.section,
             quantity: line.quantity,
           })),

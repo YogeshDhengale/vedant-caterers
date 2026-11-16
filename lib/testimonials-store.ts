@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 
+import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
 
-const filePath = path.join(process.cwd(), "data", "testimonials.csv")
+const filePath = dataCsvPath("testimonials.csv")
 
 const header = [
   "id",
@@ -136,8 +137,17 @@ async function writeTestimonials(items: Testimonial[]) {
     ])
   }
 
-  await mkdir(path.dirname(filePath), { recursive: true })
-  await writeFile(filePath, serializeCsv(rows), "utf8")
+  try {
+    await mkdir(path.dirname(filePath), { recursive: true })
+    await writeFile(filePath, serializeCsv(rows), "utf8")
+  } catch (error) {
+    if (isNotWritable(error)) {
+      throw new TestimonialError(
+        "Could not write testimonials.csv. On serverless hosts, edit public/data locally and redeploy."
+      )
+    }
+    throw error
+  }
 }
 
 function localizedPair(row: string[], start: number): LocalizedText {
@@ -182,6 +192,12 @@ function numberOr(value: string | undefined, fallback: number) {
 
 function bySort<T extends { sort: number }>(left: T, right: T) {
   return left.sort - right.sort
+}
+
+function isNotWritable(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false
+  const code = error.code
+  return code === "EACCES" || code === "EROFS" || code === "EPERM" || code === "ENOTSUP"
 }
 
 function isMissingFile(error: unknown) {

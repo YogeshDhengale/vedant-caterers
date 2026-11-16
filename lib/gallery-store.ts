@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises"
 import path from "node:path"
 
+import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
 
-const csvPath = path.join(process.cwd(), "data", "gallery.csv")
+const csvPath = dataCsvPath("gallery.csv")
 export const galleryPublicDir = path.join(process.cwd(), "public", "gallery")
 export const galleryUrlPrefix = "/gallery"
 
@@ -308,8 +309,17 @@ async function writeGallery(data: GalleryData) {
     }
   }
 
-  await mkdir(path.dirname(csvPath), { recursive: true })
-  await writeFile(csvPath, serializeCsv(rows), "utf8")
+  try {
+    await mkdir(path.dirname(csvPath), { recursive: true })
+    await writeFile(csvPath, serializeCsv(rows), "utf8")
+  } catch (error) {
+    if (isNotWritable(error)) {
+      throw new GalleryError(
+        "Could not write gallery.csv. On serverless hosts, edit public/data locally and redeploy."
+      )
+    }
+    throw error
+  }
 }
 
 function localizedPair(row: string[], start: number): LocalizedText {
@@ -369,4 +379,10 @@ function bySort<T extends { sort: number }>(left: T, right: T) {
 
 function isMissingFile(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+}
+
+function isNotWritable(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false
+  const code = error.code
+  return code === "EACCES" || code === "EROFS" || code === "EPERM" || code === "ENOTSUP"
 }

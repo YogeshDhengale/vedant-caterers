@@ -94,7 +94,7 @@ export function GalleryEditor({ categories }: { categories: GalleryCategory[] })
         <h2 className="font-heading text-primary-foreground text-2xl font-normal">Gallery</h2>
         <p className="text-muted-foreground text-sm">
           Images save under <code className="text-xs">public/gallery/</code> and metadata to{" "}
-          <code className="text-xs">data/gallery.csv</code>. English copy is required; add Marathi when ready.
+          <code className="text-xs">public/data/gallery.csv</code>. English copy is required; add Marathi when ready.
         </p>
       </div>
 

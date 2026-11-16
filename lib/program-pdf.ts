@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 
+import "regenerator-runtime/runtime"
+import fontkit from "@pdf-lib/fontkit"
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib"
 
+import type { Locale } from "@/lib/i18n"
 import { menuSections } from "@/lib/menu-sections"
 import type { MenuData } from "@/lib/menu-store"
+import { localized } from "@/lib/menu-text"
 
 const cream = rgb(0.925, 0.906, 0.882)
 const menuCream = rgb(0.98, 0.957, 0.922)
@@ -30,8 +34,17 @@ export type ProgramPdfDetails = {
   phone: string
   venue: string
   date: string
+  locale?: Locale
   items: ProgramPdfItem[]
 }
+
+type PdfFonts = {
+  latin: PDFFont
+  latinBold: PDFFont
+  indic?: PDFFont
+}
+
+const devanagariRe = /[\u0900-\u097F]/
 
 export async function buildProgramPdf(details: ProgramPdfDetails) {
   const [fillerBytes, menuBytes] = await Promise.all([
@@ -41,17 +54,17 @@ export async function buildProgramPdf(details: ProgramPdfDetails) {
   const filler = await PDFDocument.load(fillerBytes)
   const menu = await PDFDocument.load(menuBytes)
   const output = await PDFDocument.create()
-  const roman = await output.embedFont(StandardFonts.TimesRoman)
-  const romanBold = await output.embedFont(StandardFonts.TimesRomanBold)
+  output.registerFontkit(fontkit)
+  const fonts = await loadFonts(output, details.locale)
 
   const [welcome, cover, service, closing] = await output.copyPages(filler, [0, 1, 2, 3])
-  paintCover(cover, details, roman, romanBold)
+  paintCover(cover, details, fonts)
   output.addPage(welcome)
   output.addPage(cover)
 
   for (const page of menuPages(details.items)) {
     const [sheet] = await output.copyPages(menu, [0])
-    paintMenuPage(sheet, page.title, page.items, roman)
+    paintMenuPage(sheet, page.title, page.items, fonts)
     output.addPage(sheet)
   }
 
@@ -61,7 +74,11 @@ export async function buildProgramPdf(details: ProgramPdfDetails) {
   return output.save()
 }
 
-export function expandProgramLines(lines: ProgramPdfLine[], menu: MenuData): ProgramPdfItem[] {
+export function expandProgramLines(
+  lines: ProgramPdfLine[],
+  menu: MenuData,
+  locale: Locale = "en"
+): ProgramPdfItem[] {
   const expanded: ProgramPdfItem[] = []
   for (const line of lines) {
     if (line.kind === "package" && line.key?.startsWith("package:")) {
@@ -75,14 +92,40 @@ export function expandProgramLines(lines: ProgramPdfLine[], menu: MenuData): Pro
       }
       for (let copy = 0; copy < line.quantity; copy += 1) {
         for (const dish of dishes) {
-          expanded.push({ name: dish.name.en, section: line.section, quantity: 1 })
+          expanded.push({
+            name: localized(dish.name, locale),
+            section: line.section,
+            quantity: 1,
+          })
         }
       }
+      continue
+    }
+    if (line.kind === "dish" && line.key?.startsWith("dish:")) {
+      const itemId = line.key.slice("dish:".length)
+      const dish = menu.items.find((item) => item.id === itemId)
+      expanded.push({
+        name: dish ? localized(dish.name, locale) : line.name,
+        section: line.section,
+        quantity: line.quantity,
+      })
       continue
     }
     expanded.push({ name: line.name, section: line.section, quantity: line.quantity })
   }
   return expanded
+}
+
+async function loadFonts(output: PDFDocument, locale?: Locale): Promise<PdfFonts> {
+  const latin = await output.embedFont(StandardFonts.TimesRoman)
+  const latinBold = await output.embedFont(StandardFonts.TimesRomanBold)
+  if (locale !== "mr" && locale !== "hi") {
+    return { latin, latinBold }
+  }
+
+  const bytes = await readFile(path.join(process.cwd(), "public", "fonts", "NotoSansDevanagari-Regular.ttf"))
+  const indic = await output.embedFont(bytes, { subset: true })
+  return { latin, latinBold, indic }
 }
 
 function menuPages(items: ProgramPdfItem[]) {
@@ -118,22 +161,22 @@ function menuPages(items: ProgramPdfItem[]) {
   return pages
 }
 
-function paintCover(page: PDFPage, details: ProgramPdfDetails, roman: PDFFont, romanBold: PDFFont) {
+function paintCover(page: PDFPage, details: ProgramPdfDetails, fonts: PdfFonts) {
   cover(page, 100, 598, 420, 78)
   cover(page, 170, 522, 280, 72)
-  const [first, second] = nameLines(details.name)
-  drawCentered(page, first, 614, 42, romanBold, 400)
-  if (second) drawCentered(page, second, 548, 42, romanBold, 400)
+  const [first, second] = nameLines(details.name, fonts)
+  drawCentered(page, first, 614, 42, fonts, 400, "bold")
+  if (second) drawCentered(page, second, 548, 42, fonts, 400, "bold")
 
-  replaceValue(page, 245, 299.7, details.name, roman)
-  replaceValue(page, 245, 268.9, details.phone, roman)
-  replaceValue(page, 245, 234.7, details.venue, roman)
-  replaceValue(page, 244, 209.5, displayDate(details.date), roman)
+  replaceValue(page, 245, 299.7, details.name, fonts)
+  replaceValue(page, 245, 268.9, details.phone, fonts)
+  replaceValue(page, 245, 234.7, details.venue, fonts)
+  replaceValue(page, 244, 209.5, displayDate(details.date), fonts)
 }
 
-function paintMenuPage(page: PDFPage, title: string, items: string[], roman: PDFFont) {
+function paintMenuPage(page: PDFPage, title: string, items: string[], fonts: PdfFonts) {
   cover(page, 70, 730, 460, 62, menuCream)
-  drawCentered(page, title, 750, 28, roman, 420)
+  drawCentered(page, title, 750, 28, fonts, 420)
 
   rowBaselines.forEach((baseline, index) => {
     const item = items[index]
@@ -141,27 +184,29 @@ function paintMenuPage(page: PDFPage, title: string, items: string[], roman: PDF
       cover(page, 450, baseline - 4, 100, 18, menuCream)
       return
     }
-    const fitted = fitText(roman, winAnsi(item), 340, 12)
-    page.drawText(fitted.text, {
-      x: 72,
-      y: baseline,
-      size: fitted.size,
-      font: roman,
-      color: green,
-    })
+    drawLeft(page, 72, baseline, item, fonts, 340, 12)
   })
 }
 
-function replaceValue(page: PDFPage, x: number, y: number, value: string, font: PDFFont) {
+function replaceValue(page: PDFPage, x: number, y: number, value: string, fonts: PdfFonts) {
   cover(page, x - 2, y - 3, 220, 18)
-  const text = winAnsi(value.trim())
-  if (!text) return
-  const fitted = fitText(font, text, 280, 13)
-  page.drawText(fitted.text, { x, y, size: fitted.size, font, color: green })
+  drawLeft(page, x, y, value, fonts, 280, 13)
 }
 
-function drawCentered(page: PDFPage, text: string, y: number, size: number, font: PDFFont, maxWidth: number) {
-  const fitted = fitText(font, winAnsi(text), maxWidth, size)
+function drawCentered(
+  page: PDFPage,
+  text: string,
+  y: number,
+  size: number,
+  fonts: PdfFonts,
+  maxWidth: number,
+  weight: "regular" | "bold" = "regular"
+) {
+  const raw = text.trim()
+  if (!raw) return
+  const font = pickFont(raw, fonts, weight)
+  const encoded = encodeForFont(raw, font, fonts)
+  const fitted = fitText(font, encoded, maxWidth, size)
   const width = font.widthOfTextAtSize(fitted.text, fitted.size)
   page.drawText(fitted.text, {
     x: (page.getWidth() - width) / 2,
@@ -172,12 +217,33 @@ function drawCentered(page: PDFPage, text: string, y: number, size: number, font
   })
 }
 
+function drawLeft(page: PDFPage, x: number, y: number, value: string, fonts: PdfFonts, maxWidth: number, size: number) {
+  const raw = value.trim()
+  if (!raw) return
+  const font = pickFont(raw, fonts)
+  const encoded = encodeForFont(raw, font, fonts)
+  const fitted = fitText(font, encoded, maxWidth, size)
+  page.drawText(fitted.text, { x, y, size: fitted.size, font, color: green })
+}
+
+function pickFont(text: string, fonts: PdfFonts, weight: "regular" | "bold" = "regular") {
+  if (fonts.indic && devanagariRe.test(text)) return fonts.indic
+  return weight === "bold" ? fonts.latinBold : fonts.latin
+}
+
+function encodeForFont(text: string, font: PDFFont, fonts: PdfFonts) {
+  if (fonts.indic && font === fonts.indic) return text.replace(/\s+/g, " ").trim()
+  return winAnsi(text)
+}
+
 function cover(page: PDFPage, x: number, y: number, width: number, height: number, color = cream) {
   page.drawRectangle({ x, y, width, height, color, borderWidth: 0 })
 }
 
-function nameLines(name: string) {
-  const words = winAnsi(name).toUpperCase().split(/\s+/).filter(Boolean)
+function nameLines(name: string, fonts: PdfFonts) {
+  const useIndic = Boolean(fonts.indic && devanagariRe.test(name))
+  const normalized = useIndic ? name.trim().replace(/\s+/g, " ") : winAnsi(name)
+  const words = (useIndic ? normalized : normalized.toUpperCase()).split(/\s+/).filter(Boolean)
   if (words.length <= 1) return [words[0] ?? "", ""]
   return [words.slice(0, -1).join(" "), words.at(-1) ?? ""]
 }

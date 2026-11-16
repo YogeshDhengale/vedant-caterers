@@ -38,7 +38,7 @@ export function AdminDashboard({
           <h1 className="font-heading text-primary-foreground text-3xl font-normal">Site admin</h1>
           <p className="text-muted-foreground text-sm">
             Manage menu, testimonials, and gallery content. CSV metadata lives in{" "}
-            <code className="text-xs">data/</code>; gallery images in{" "}
+            <code className="text-xs">public/data/</code>; gallery images in{" "}
             <code className="text-xs">public/gallery/</code>.
           </p>
         </div>

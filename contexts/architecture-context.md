@@ -32,7 +32,7 @@ Items marked **(assumed)** follow the reference project conventions and should b
 - Each content type has an `interface` (for example `Service`, `MenuCategory`, `Testimonial`, `GalleryItem`, `SiteSettings`).
 - Pages and sections receive content as props or read it from `content/`; they never embed copy directly.
 - A headless CMS is not part of the first version. If adopted later, only the `content/` layer should need to change.
-- Menu categories and dishes are not in a database. They live in `public/data/menu.csv` (with testimonials and gallery metadata alongside). Excel can open these files. `/admin` edits them through the menu, testimonials, and gallery APIs. The public site reads them on each request. Writes require the `ADMIN_PASSWORD` session and a writable filesystem (not typical on serverless without redeploy).
+- Menu, testimonials, and gallery metadata live in MongoDB when `MONGODB_URI` is set (`vedant_caterers` database by default). Gallery images are stored as BSON binaries in `gallery_media` and served from `/api/gallery/media/[id]`. Without MongoDB, the same data falls back to `public/data/*.csv` and files under `public/gallery/`. `/admin` edits through the APIs with the `ADMIN_PASSWORD` session.
 - Placeholder content must be clearly flagged so it cannot reach production unnoticed.
 
 ## Enquiry Model

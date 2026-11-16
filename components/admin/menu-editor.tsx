@@ -107,7 +107,7 @@ export function MenuEditor({
         <div className="flex flex-col gap-2">
           <h2 className="font-heading text-primary-foreground text-2xl font-normal">Menu</h2>
           <p className="text-muted-foreground text-sm">
-            Changes are saved to public/data/menu.csv and appear on the menu page immediately.
+            Changes are saved to MongoDB (or public/data/menu.csv locally) and appear on the menu page immediately.
           </p>
         </div>
       ) : (
@@ -115,7 +115,7 @@ export function MenuEditor({
           <div className="flex flex-col gap-2">
             <h1 className="font-heading text-primary-foreground text-3xl font-normal">Menu admin</h1>
             <p className="text-muted-foreground text-sm">
-              Changes are saved to public/data/menu.csv and appear on the menu page immediately.
+              Changes are saved to MongoDB (or public/data/menu.csv locally) and appear on the menu page immediately.
             </p>
           </div>
           <Button type="button" variant="outline" onClick={logout}>

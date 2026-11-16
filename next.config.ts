@@ -10,7 +10,19 @@ const nextConfig: NextConfig = {
         search: "",
       },
     ],
+    localPatterns: [
+      {
+        pathname: "/logo.png",
+      },
+      {
+        pathname: "/api/gallery/media/**",
+      },
+      {
+        pathname: "/gallery/**",
+      },
+    ],
   },
+  serverExternalPackages: ["mongodb", "@pdf-lib/fontkit"],
   experimental: {
     agentFeedback: true,
   },

@@ -93,8 +93,7 @@ export function GalleryEditor({ categories }: { categories: GalleryCategory[] })
       <div className="flex flex-col gap-2">
         <h2 className="font-heading text-primary-foreground text-2xl font-normal">Gallery</h2>
         <p className="text-muted-foreground text-sm">
-          Images save under <code className="text-xs">public/gallery/</code> and metadata to{" "}
-          <code className="text-xs">public/data/gallery.csv</code>. English copy is required; add Marathi when ready.
+          Images and metadata save to MongoDB when configured. English copy is required; add Marathi when ready.
         </p>
       </div>
 

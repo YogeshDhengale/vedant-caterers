@@ -5,6 +5,9 @@ import path from "node:path"
 import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
+import { readWithMongoFallback } from "@/lib/mongo-fallback"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
+import type { TestimonialsContentDoc } from "@/lib/mongo-documents"
 
 const filePath = dataCsvPath("testimonials.csv")
 
@@ -42,6 +45,35 @@ let writeQueue: Promise<unknown> = Promise.resolve()
 export class TestimonialError extends Error {}
 
 export async function readTestimonials(): Promise<Testimonial[]> {
+  return readWithMongoFallback(
+    readTestimonialsFromMongo,
+    readTestimonialsFromCsv,
+    (items) => items.length === 0,
+    saveTestimonialsDocument
+  )
+}
+
+async function saveTestimonialsDocument(items: Testimonial[]) {
+  if (!mongoConfigured()) return
+  const db = await getDb()
+  const document: TestimonialsContentDoc = {
+    _id: "testimonials",
+    items,
+    updatedAt: new Date(),
+  }
+  await db.collection<TestimonialsContentDoc>(contentCollection).replaceOne({ _id: "testimonials" }, document, {
+    upsert: true,
+  })
+}
+
+async function readTestimonialsFromMongo(): Promise<Testimonial[]> {
+  const db = await getDb()
+  const doc = await db.collection<TestimonialsContentDoc>(contentCollection).findOne({ _id: "testimonials" })
+  const items = [...(doc?.items ?? [])].sort(bySort)
+  return items
+}
+
+async function readTestimonialsFromCsv(): Promise<Testimonial[]> {
   let source = ""
   try {
     source = await readFile(filePath, "utf8")
@@ -123,6 +155,11 @@ async function updateFile<T>(change: (items: Testimonial[]) => T): Promise<T> {
 }
 
 async function writeTestimonials(items: Testimonial[]) {
+  if (mongoConfigured()) {
+    await saveTestimonialsDocument(items)
+    return
+  }
+
   const rows: string[][] = [Array.from(header)]
   for (const item of [...items].sort(bySort)) {
     rows.push([

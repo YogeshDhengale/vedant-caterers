@@ -5,6 +5,9 @@ import path from "node:path"
 import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import { localized, type LocalizedText } from "@/lib/menu-text"
+import { readWithMongoFallback } from "@/lib/mongo-fallback"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
+import type { MenuContentDoc } from "@/lib/mongo-documents"
 
 export { localized }
 export type { LocalizedText }
@@ -61,6 +64,36 @@ const DESCRIPTION_LIMIT = 400
 let writeQueue: Promise<unknown> = Promise.resolve()
 
 export async function readMenu(): Promise<MenuData> {
+  return readWithMongoFallback(
+    readMenuFromMongo,
+    readMenuFromCsv,
+    (menu) => menu.categories.length === 0 && menu.items.length === 0,
+    saveMenuDocument
+  )
+}
+
+async function saveMenuDocument(menu: MenuData) {
+  if (!mongoConfigured()) return
+  const db = await getDb()
+  const document: MenuContentDoc = {
+    _id: "menu",
+    categories: menu.categories,
+    items: menu.items,
+    updatedAt: new Date(),
+  }
+  await db.collection<MenuContentDoc>(contentCollection).replaceOne({ _id: "menu" }, document, { upsert: true })
+}
+
+async function readMenuFromMongo(): Promise<MenuData> {
+  const db = await getDb()
+  const doc = await db.collection<MenuContentDoc>(contentCollection).findOne({ _id: "menu" })
+  if (!doc) return { categories: [], items: [] }
+  const categories = [...(doc.categories ?? [])].sort(bySort)
+  const items = [...(doc.items ?? [])].sort(bySort)
+  return { categories, items }
+}
+
+async function readMenuFromCsv(): Promise<MenuData> {
   let source = ""
   try {
     source = await readFile(filePath, "utf8")
@@ -191,6 +224,11 @@ async function updateMenu<T>(change: (menu: MenuData) => T): Promise<T> {
 }
 
 async function writeMenu(menu: MenuData) {
+  if (mongoConfigured()) {
+    await saveMenuDocument(menu)
+    return
+  }
+
   const rows: string[][] = [Array.from(header)]
   for (const category of [...menu.categories].sort(bySort)) {
     rows.push([
@@ -227,7 +265,7 @@ async function writeMenu(menu: MenuData) {
   } catch (error) {
     if (isNotWritable(error)) {
       throw new MenuError(
-        "Could not write menu.csv. On serverless hosts, save menu changes locally and redeploy with public/data/menu.csv."
+        "Could not write menu data. Set MONGODB_URI for serverless hosting or use a writable filesystem for CSV files."
       )
     }
     throw error

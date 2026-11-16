@@ -38,7 +38,8 @@ export function AdminDashboard({
           <h1 className="font-heading text-primary-foreground text-3xl font-normal">Site admin</h1>
           <p className="text-muted-foreground text-sm">
             Manage menu, testimonials, and gallery content. CSV metadata lives in{" "}
-            <code className="text-xs">public/data/</code>; gallery images in{" "}
+            MongoDB when <code className="text-xs">MONGODB_URI</code> is set (menu, testimonials, gallery metadata
+            and image binaries). Without it, data falls back to <code className="text-xs">public/data/</code> and{" "}
             <code className="text-xs">public/gallery/</code>.
           </p>
         </div>

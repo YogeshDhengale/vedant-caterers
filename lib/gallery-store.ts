@@ -3,8 +3,18 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises"
 import path from "node:path"
 
 import { dataCsvPath } from "@/lib/data-path"
+import {
+  contentTypeFromExtension,
+  deleteGalleryMedia,
+  galleryMediaUrlPrefix,
+  mediaIdFromFile,
+  writeGalleryMedia,
+} from "@/lib/gallery-media"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
+import { readWithMongoFallback } from "@/lib/mongo-fallback"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
+import type { GalleryContentDoc } from "@/lib/mongo-documents"
 
 const csvPath = dataCsvPath("gallery.csv")
 export const galleryPublicDir = path.join(process.cwd(), "public", "gallery")
@@ -69,6 +79,36 @@ let writeQueue: Promise<unknown> = Promise.resolve()
 export class GalleryError extends Error {}
 
 export async function readGallery(): Promise<GalleryData> {
+  return readWithMongoFallback(
+    readGalleryFromMongo,
+    readGalleryFromCsv,
+    (data) => data.categories.length === 0,
+    saveGalleryDocument
+  )
+}
+
+async function saveGalleryDocument(data: GalleryData) {
+  if (!mongoConfigured()) return
+  const db = await getDb()
+  const document: GalleryContentDoc = {
+    _id: "gallery",
+    categories: data.categories,
+    updatedAt: new Date(),
+  }
+  await db.collection<GalleryContentDoc>(contentCollection).replaceOne({ _id: "gallery" }, document, { upsert: true })
+}
+
+async function readGalleryFromMongo(): Promise<GalleryData> {
+  const db = await getDb()
+  const doc = await db.collection<GalleryContentDoc>(contentCollection).findOne({ _id: "gallery" })
+  const categories = [...(doc?.categories ?? [])].sort(bySort)
+  for (const category of categories) {
+    category.photos = [...category.photos].sort(bySort)
+  }
+  return { categories }
+}
+
+async function readGalleryFromCsv(): Promise<GalleryData> {
   let source = ""
   try {
     source = await readFile(csvPath, "utf8")
@@ -230,6 +270,13 @@ export function normalizeGalleryFile(file: string) {
   const trimmed = file.trim()
   if (!trimmed) return ""
   const normalized = trimmed.replace(/^\/+/, "")
+  if (normalized.startsWith(`${galleryMediaUrlPrefix}/`)) {
+    if (normalized.includes("..")) throw new GalleryError("Invalid image path.")
+    return normalized
+  }
+  if (mongoConfigured()) {
+    throw new GalleryError("Upload an image through the gallery admin.")
+  }
   if (!normalized.startsWith("gallery/")) {
     throw new GalleryError("Image path must be under gallery/.")
   }
@@ -242,16 +289,29 @@ export async function saveGalleryUpload(name: string, bytes: Buffer) {
   if (!extension) throw new GalleryError("Use a JPG, PNG, WebP, or GIF image.")
   if (bytes.byteLength > 5 * 1024 * 1024) throw new GalleryError("Image must be 5 MB or smaller.")
 
-  await mkdir(galleryPublicDir, { recursive: true })
   const id = randomUUID()
+  if (mongoConfigured()) {
+    await writeGalleryMedia(id, bytes, contentTypeFromExtension(extension), name)
+    return `${galleryMediaUrlPrefix}/${id}`
+  }
+
+  await mkdir(galleryPublicDir, { recursive: true })
   const relative = `gallery/${id}.${extension}`
   await writeFile(path.join(process.cwd(), "public", relative), bytes)
   return relative
 }
 
 export async function removeGalleryFile(relative: string) {
-  const safe = normalizeGalleryFile(relative)
-  const absolute = path.join(process.cwd(), "public", safe)
+  const mediaId = mediaIdFromFile(relative)
+  if (mediaId) {
+    await deleteGalleryMedia(mediaId)
+    return
+  }
+
+  const normalized = relative.trim().replace(/^\/+/, "")
+  if (!normalized.startsWith("gallery/") || normalized.includes("..")) return
+
+  const absolute = path.join(process.cwd(), "public", normalized)
   try {
     await unlink(absolute)
   } catch (error) {
@@ -274,6 +334,11 @@ async function updateGallery<T>(change: (data: GalleryData) => T): Promise<T> {
 }
 
 async function writeGallery(data: GalleryData) {
+  if (mongoConfigured()) {
+    await saveGalleryDocument(data)
+    return
+  }
+
   const rows: string[][] = [Array.from(header)]
   const categories = [...data.categories].sort(bySort)
   for (const category of categories) {

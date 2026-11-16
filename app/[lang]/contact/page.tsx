@@ -1,8 +1,11 @@
 import type { Metadata } from "next"
+import { connection } from "next/server"
 import { notFound } from "next/navigation"
+import { Suspense } from "react"
 
 import { ContactPage } from "@/components/sections/contact-page"
 import { getDictionary } from "@/content/dictionaries"
+import type { Dictionary } from "@/content/dictionaries/en"
 import { hasLocale } from "@/lib/i18n"
 import { buildSiteMetadata } from "@/lib/seo"
 
@@ -32,5 +35,16 @@ export default async function Contact({ params }: { params: Promise<{ lang: stri
 
   const dictionary = getDictionary(lang)
 
-  return <ContactPage content={dictionary.contact} />
+  return (
+    <Suspense
+      fallback={<p className="text-muted-foreground px-4 py-16 text-center">Loading contact form…</p>}
+    >
+      <ContactRoute content={dictionary.contact} />
+    </Suspense>
+  )
+}
+
+async function ContactRoute({ content }: { content: Dictionary["contact"] }) {
+  await connection()
+  return <ContactPage content={content} />
 }

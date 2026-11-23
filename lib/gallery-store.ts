@@ -13,8 +13,9 @@ import {
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
 import { readWithMongoFallback } from "@/lib/mongo-fallback"
-import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 import type { GalleryContentDoc } from "@/lib/mongo-documents"
+import { upsertWithServerTimestamp } from "@/lib/mongo-timestamps"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 
 const csvPath = dataCsvPath("gallery.csv")
 export const galleryPublicDir = path.join(process.cwd(), "public", "gallery")
@@ -90,12 +91,10 @@ export async function readGallery(): Promise<GalleryData> {
 async function saveGalleryDocument(data: GalleryData) {
   if (!mongoConfigured()) return
   const db = await getDb()
-  const document: GalleryContentDoc = {
+  await upsertWithServerTimestamp(db.collection<GalleryContentDoc>(contentCollection), {
     _id: "gallery",
     categories: data.categories,
-    updatedAt: new Date(),
-  }
-  await db.collection<GalleryContentDoc>(contentCollection).replaceOne({ _id: "gallery" }, document, { upsert: true })
+  })
 }
 
 async function readGalleryFromMongo(): Promise<GalleryData> {

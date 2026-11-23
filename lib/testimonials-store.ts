@@ -6,8 +6,9 @@ import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import type { LocalizedText } from "@/lib/menu-text"
 import { readWithMongoFallback } from "@/lib/mongo-fallback"
-import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 import type { TestimonialsContentDoc } from "@/lib/mongo-documents"
+import { upsertWithServerTimestamp } from "@/lib/mongo-timestamps"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 
 const filePath = dataCsvPath("testimonials.csv")
 
@@ -56,13 +57,9 @@ export async function readTestimonials(): Promise<Testimonial[]> {
 async function saveTestimonialsDocument(items: Testimonial[]) {
   if (!mongoConfigured()) return
   const db = await getDb()
-  const document: TestimonialsContentDoc = {
+  await upsertWithServerTimestamp(db.collection<TestimonialsContentDoc>(contentCollection), {
     _id: "testimonials",
     items,
-    updatedAt: new Date(),
-  }
-  await db.collection<TestimonialsContentDoc>(contentCollection).replaceOne({ _id: "testimonials" }, document, {
-    upsert: true,
   })
 }
 

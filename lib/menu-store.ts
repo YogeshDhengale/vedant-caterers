@@ -6,8 +6,9 @@ import { dataCsvPath } from "@/lib/data-path"
 import { parseCsv, serializeCsv } from "@/lib/menu-csv"
 import { localized, type LocalizedText } from "@/lib/menu-text"
 import { readWithMongoFallback } from "@/lib/mongo-fallback"
-import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 import type { MenuContentDoc } from "@/lib/mongo-documents"
+import { upsertWithServerTimestamp } from "@/lib/mongo-timestamps"
+import { contentCollection, getDb, mongoConfigured } from "@/lib/mongodb"
 
 export { localized }
 export type { LocalizedText }
@@ -75,13 +76,11 @@ export async function readMenu(): Promise<MenuData> {
 async function saveMenuDocument(menu: MenuData) {
   if (!mongoConfigured()) return
   const db = await getDb()
-  const document: MenuContentDoc = {
+  await upsertWithServerTimestamp(db.collection<MenuContentDoc>(contentCollection), {
     _id: "menu",
     categories: menu.categories,
     items: menu.items,
-    updatedAt: new Date(),
-  }
-  await db.collection<MenuContentDoc>(contentCollection).replaceOne({ _id: "menu" }, document, { upsert: true })
+  })
 }
 
 async function readMenuFromMongo(): Promise<MenuData> {

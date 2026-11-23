@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
+import { connection } from "next/server"
 import { notFound } from "next/navigation"
+import { Suspense } from "react"
 
 import { GalleryPage } from "@/components/sections/gallery-page"
 import { getDictionary } from "@/content/dictionaries"
@@ -33,14 +35,40 @@ export default async function Gallery({ params }: { params: Promise<{ lang: stri
   if (!hasLocale(lang)) notFound()
 
   const dictionary = getDictionary(lang)
+
+  return (
+    <Suspense
+      fallback={
+        <p className="text-muted-foreground px-4 py-16 text-center">{dictionary.gallery.loading}</p>
+      }
+    >
+      <GalleryCatalog
+        locale={lang}
+        shell={dictionary.gallery}
+        bookLabel={dictionary.actions.book}
+      />
+    </Suspense>
+  )
+}
+
+async function GalleryCatalog({
+  locale,
+  shell,
+  bookLabel,
+}: {
+  locale: Locale
+  shell: ReturnType<typeof getDictionary>["gallery"]
+  bookLabel: string
+}) {
+  await connection()
   const gallery = await readGallery()
 
   return (
     <GalleryPage
-      locale={lang}
-      shell={dictionary.gallery}
-      categories={galleryView(gallery.categories, lang)}
-      bookLabel={dictionary.actions.book}
+      locale={locale}
+      shell={shell}
+      categories={galleryView(gallery.categories, locale)}
+      bookLabel={bookLabel}
     />
   )
 }

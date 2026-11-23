@@ -73,6 +73,7 @@ export const dictionary = {
     title: "Visual Feast: Moments & Memories with Vedant Caterers",
     subtitle:
       "Explore our grand venue setups, live food counters, and mouth-watering culinary presentations crafted for celebrations across Pune.",
+    loading: "Loading gallery…",
     imageFallback: "Photo coming soon",
     openFullImage: "View full size",
     lightboxTitle: "Gallery preview",

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Plus, ShoppingBag } from "lucide-react";
+import { Plus, Search, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/components/cart/cart-provider";
 import { QuantityStepper } from "@/components/enquiry/quantity-stepper";
@@ -23,10 +24,11 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Dictionary } from "@/content/dictionaries/en";
 import { dishKey, packageKey } from "@/lib/cart";
-import type { Locale } from "@/lib/i18n";
+import { locales, type Locale } from "@/lib/i18n";
 import {
   categoryLabel,
   categorySection,
@@ -34,8 +36,56 @@ import {
   menuSections,
 } from "@/lib/menu-sections";
 import { localized } from "@/lib/menu-text";
-import type { MenuData } from "@/lib/menu-store";
+import type { LocalizedText, MenuData } from "@/lib/menu-store";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+type MenuGroup = {
+  category: MenuData["categories"][number];
+  section: ReturnType<typeof categorySection>;
+  items: MenuData["items"];
+};
+
+function normalizedIncludes(haystack: string, needle: string) {
+  return haystack.toLowerCase().includes(needle);
+}
+
+function localizedTextMatches(text: LocalizedText, query: string) {
+  return locales.some((locale) =>
+    normalizedIncludes(localized(text, locale), query),
+  );
+}
+
+function filterMenuGroups(
+  groups: MenuGroup[],
+  query: string,
+  content: Dictionary["menuPage"],
+): MenuGroup[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return groups;
+
+  return groups
+    .map((group) => {
+      const englishName = localized(group.category.name, "en");
+      const title = categoryLabel(englishName);
+      const sectionLabel = group.section
+        ? content.sections[group.section]
+        : title;
+      const categoryMatch =
+        localizedTextMatches(group.category.name, trimmed) ||
+        normalizedIncludes(title, trimmed) ||
+        normalizedIncludes(sectionLabel, trimmed) ||
+        (group.section ? normalizedIncludes(group.section, trimmed) : false);
+
+      if (categoryMatch) return group;
+
+      const items = group.items.filter((item) =>
+        localizedTextMatches(item.name, trimmed),
+      );
+      if (items.length === 0) return null;
+      return { ...group, items };
+    })
+    .filter((group): group is MenuGroup => group !== null);
+}
 
 export function MenuPage({
   content,
@@ -49,18 +99,30 @@ export function MenuPage({
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
   const cart = useCart();
+  const [searchQuery, setSearchQuery] = useState("");
   const cartBarSpring = {
     type: "spring" as const,
     stiffness: 320,
     damping: 28,
   };
-  const groups = menu.categories
-    .map((category) => ({
-      category,
-      section: categorySection(localized(category.name, "en")),
-      items: menu.items.filter((item) => item.categoryId === category.id),
-    }))
-    .filter((group) => group.items.length > 0);
+  const groups = useMemo(
+    () =>
+      menu.categories
+        .map((category) => ({
+          category,
+          section: categorySection(localized(category.name, "en")),
+          items: menu.items.filter((item) => item.categoryId === category.id),
+        }))
+        .filter((group) => group.items.length > 0),
+    [menu],
+  );
+
+  const searchedGroups = useMemo(
+    () => filterMenuGroups(groups, searchQuery, content),
+    [groups, searchQuery, content],
+  );
+
+  const hasSearch = searchQuery.trim().length > 0;
 
   return (
     <div className="  text-foreground">
@@ -79,38 +141,65 @@ export function MenuPage({
         ) : null}
       </div>
 
-      <div className="mx-auto flex max-w-7xl flex-col px-4 pb-16 sm:px-6 lg:px-8">
-        <Tabs
-          defaultValue="all"
-          orientation={isMobile ? "horizontal" : "vertical"}
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-16 sm:px-6 lg:px-8">
+        <motion.div
+          layout
+          className="relative w-full max-w-xl md:max-w-md md:self-start mx-auto"
         >
-          <TabsList className="md:sticky top-20 h-fit w-full md:w-fit max-w-fit overflow-x-auto md:overflow-hidden justify-start">
-            <TabsTrigger value="all">{content.allTab}</TabsTrigger>
-            {menuSections.map((section) => (
-              <TabsTrigger key={section} value={section}>
-                {content.sections[section]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value="all">
-            <MenuGrid
-              groups={groups}
-              locale={locale}
-              content={content}
-              empty={content.empty}
-            />
-          </TabsContent>
-          {menuSections.map((section) => (
-            <TabsContent key={section} value={section}>
+          <Search
+            aria-hidden
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
+          <Input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={content.searchPlaceholder}
+            aria-label={content.searchLabel}
+            className="h-10 pl-9"
+          />
+        </motion.div>
+
+        {hasSearch ? (
+          <MenuGrid
+            groups={searchedGroups}
+            locale={locale}
+            content={content}
+            empty={content.searchEmpty}
+          />
+        ) : (
+          <Tabs
+            defaultValue="all"
+            orientation={isMobile ? "horizontal" : "vertical"}
+          >
+            <TabsList className="md:sticky top-20 h-fit w-full md:w-fit max-w-fit overflow-x-auto md:overflow-hidden justify-start">
+              <TabsTrigger value="all">{content.allTab}</TabsTrigger>
+              {menuSections.map((section) => (
+                <TabsTrigger key={section} value={section}>
+                  {content.sections[section]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value="all">
               <MenuGrid
-                groups={groups.filter((group) => group.section === section)}
+                groups={groups}
                 locale={locale}
                 content={content}
                 empty={content.empty}
               />
             </TabsContent>
-          ))}
-        </Tabs>
+            {menuSections.map((section) => (
+              <TabsContent key={section} value={section}>
+                <MenuGrid
+                  groups={groups.filter((group) => group.section === section)}
+                  locale={locale}
+                  content={content}
+                  empty={content.empty}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
       </div>
 
       <div className="fixed inset-x-0 bottom-10 z-50 flex justify-center px-4">
@@ -124,7 +213,10 @@ export function MenuPage({
               transition={cartBarSpring}
               className="w-fit overflow-hidden inline-flex h-fit items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-foreground ring-2 ring-primary ring-offset-2"
             >
-              <Link href={`/${locale}/cart`} className="inline-flex items-center justify-center gap-2">
+              <Link
+                href={`/${locale}/cart`}
+                className="inline-flex items-center justify-center gap-2"
+              >
                 <ShoppingBag
                   data-icon="inline-start"
                   className="size-4 shrink-0"
@@ -145,11 +237,7 @@ function MenuGrid({
   content,
   empty,
 }: {
-  groups: Array<{
-    category: MenuData["categories"][number];
-    section: ReturnType<typeof categorySection>;
-    items: MenuData["items"];
-  }>;
+  groups: MenuGroup[];
   locale: Locale;
   content: Dictionary["menuPage"];
   empty: string;

@@ -74,6 +74,11 @@ export const dictionary = {
     subtitle:
       "Explore our grand venue setups, live food counters, and mouth-watering culinary presentations crafted for celebrations across Pune.",
     imageFallback: "Photo coming soon",
+    openFullImage: "View full size",
+    lightboxTitle: "Gallery preview",
+    lightboxClose: "Close preview",
+    lightboxPrevious: "Previous image",
+    lightboxNext: "Next image",
     cta: {
       title: "Like What You See? Let’s Plan Your Menu!",
       supporting:
@@ -93,6 +98,9 @@ export const dictionary = {
     decrease: "Decrease quantity",
     increase: "Increase quantity",
     allTab: "All Selection",
+    searchLabel: "Search menu",
+    searchPlaceholder: "Search by category or dish name…",
+    searchEmpty: "No categories or dishes match your search.",
     sections: {
       "Thali Packages": "Thali Packages",
       "Breakfast Packages": "Breakfast Packages",

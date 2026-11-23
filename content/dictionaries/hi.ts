@@ -76,7 +76,12 @@ export const dictionary = {
     subtitle:
       "पुणे भर के समारोहों के लिए तैयार भव्य वेन्यू सेटअप, लाइव फ़ूड काउंटर और स्वादिष्ट व्यंजन प्रस्तुतियाँ देखें।",
     imageFallback: "फ़ोटो जल्द आएगी",
-        cta: {
+    openFullImage: "पूर्ण आकार में देखें",
+    lightboxTitle: "गैलरी प्रीव्यू",
+    lightboxClose: "प्रीव्यू बंद करें",
+    lightboxPrevious: "पिछली तस्वीर",
+    lightboxNext: "अगली तस्वीर",
+    cta: {
       title: "जो देखा वह पसंद आया? चलिए मेनू की योजना बनाते हैं!",
       supporting: "यही सुरुचि और स्वाद अपनी आने वाली शादी, कॉर्पोरेट कार्यक्रम या पारिवारिक समारोह में लाइए।",
     },
@@ -94,6 +99,9 @@ export const dictionary = {
     decrease: "मात्रा घटाएँ",
     increase: "मात्रा बढ़ाएँ",
     allTab: "सभी चयन",
+    searchLabel: "मेनू खोजें",
+    searchPlaceholder: "श्रेणी या व्यंजन के नाम से खोजें…",
+    searchEmpty: "आपकी खोज से कोई श्रेणी या व्यंजन मेल नहीं खाता।",
     sections: {
       "Thali Packages": "थाली पैकेज",
       "Breakfast Packages": "नाश्ता पैकेज",

@@ -83,9 +83,17 @@ export async function readGallery(): Promise<GalleryData> {
   return readWithMongoFallback(
     readGalleryFromMongo,
     readGalleryFromCsv,
-    (data) => data.categories.length === 0,
+    isGalleryContentMissing,
     saveGalleryDocument
   )
+}
+
+/** Mongo may hold caption-only rows from an older seed — fall back to public/data/gallery.csv. */
+function isGalleryContentMissing(data: GalleryData) {
+  if (data.categories.length === 0) return true
+  const photos = data.categories.flatMap((category) => category.photos)
+  if (photos.length === 0) return true
+  return !photos.some((photo) => photo.file.trim().length > 0)
 }
 
 async function saveGalleryDocument(data: GalleryData) {

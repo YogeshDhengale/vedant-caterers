@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./language-switcher";
 import { Locale } from "@/lib/i18n";
@@ -63,7 +64,8 @@ export function FooterSection6({
         <div className="flex flex-col items-center justify-between gap-6 py-8 text-sm lg:flex-row">
           <div className="mb-2 md:mb-0">
             <span className="text-muted-foreground me-2">
-              &copy;{new Date().getFullYear()}
+              &copy;
+              <CopyrightYear />
             </span>
             <span className="text-foreground font-bold tracking-wider">
               Vedanta Caterrers
@@ -89,6 +91,16 @@ export function FooterSection6({
       </div>
     </footer>
   );
+}
+
+function CopyrightYear() {
+  const [year, setYear] = useState("2026")
+
+  useEffect(() => {
+    setYear(String(new Date().getFullYear()))
+  }, [])
+
+  return <>{year}</>
 }
 
 export default FooterSection6;

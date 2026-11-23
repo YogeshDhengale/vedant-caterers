@@ -63,6 +63,7 @@ export const dictionary = {
   },
   testimonials: {
     title: "प्रशंसापत्र",
+    loading: "प्रशंसापत्र लोड हो रहे हैं…",
     supporting: "पूरे पुणे में हमारी सेवा कर चुके मेज़बानों और अतिथियों के शब्द।",
     viewOnInstagram: "इस पोस्ट को Instagram पर देखें",
     reels: [

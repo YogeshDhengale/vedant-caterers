@@ -63,6 +63,7 @@ export const dictionary = {
   },
   testimonials: {
     title: "अभिप्राय",
+    loading: "अभिप्राय लोड होत आहेत…",
     supporting: "संपूर्ण पुण्यात आम्ही सेवा केलेल्या यजमान आणि पाहुण्यांचे शब्द.",
     viewOnInstagram: "ही पोस्ट Instagram वर पहा",
     reels: [

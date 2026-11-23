@@ -61,6 +61,7 @@ export const dictionary = {
   },
   testimonials: {
     title: "Testimonials",
+    loading: "Loading testimonials…",
     supporting: "Words from hosts and guests we have served across Pune.",
     viewOnInstagram: "View this post on Instagram",
     reels: [

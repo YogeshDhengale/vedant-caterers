@@ -1,3 +1,5 @@
+import { after } from "next/server"
+
 import { mongoConfigured } from "@/lib/mongodb"
 
 /** Read Mongo first; if empty or unreachable, use CSV and optionally seed Mongo. */
@@ -18,11 +20,13 @@ export async function readWithMongoFallback<T>(
 
   const fromCsv = await readCsv()
   if (!isEmpty(fromCsv) && seedMongo) {
-    try {
-      await seedMongo(fromCsv)
-    } catch {
-      // Seeding is best-effort; still serve CSV data.
-    }
+    after(async () => {
+      try {
+        await seedMongo(fromCsv)
+      } catch {
+        // Seeding is best-effort and must not block prerender or the response.
+      }
+    })
   }
   return fromCsv
 }

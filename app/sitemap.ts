@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next"
+import { connection } from "next/server"
 
 import { locales } from "@/lib/i18n"
 import { languageAlternates, publicPaths, siteUrl } from "@/lib/site"
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection()
   const site = siteUrl()
   const now = new Date()
 
